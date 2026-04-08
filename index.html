@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pro Cloud Manager</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-900 text-gray-100 font-sans">
+
+    <nav class="bg-gray-800 p-4 shadow-lg flex justify-between items-center">
+        <h1 class="text-2xl font-bold text-blue-400"><i class="fas fa-cloud text-white mr-2"></i>Smartfile</h1>
+        <div>
+            <a href="https://smartfile-q80z.onrender.com/auth/login" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded font-bold shadow transition">
+                <i class="fab fa-google mr-2"></i> Add Account
+            </a>
+        </div>
+    </nav>
+
+    <div class="container mx-auto p-4">
+        <div class="bg-gray-800 p-4 rounded-lg shadow-md mb-6 flex flex-wrap gap-4 items-center">
+            <div class="flex-1">
+                <label class="block text-sm text-gray-400 mb-1">Select Account (Type Email)</label>
+                <input type="text" id="emailInput" placeholder="ekgf2003@gmail.com" class="w-full bg-gray-700 text-white p-2 rounded border border-gray-600">
+            </div>
+            <div class="flex items-end">
+                <button onclick="fetchMedia()" class="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded font-bold shadow mr-2">
+                    <i class="fas fa-sync-alt mr-1"></i> Load Files
+                </button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4" id="media-grid">
+            <p class="text-gray-400 col-span-full">Please enter an email and click 'Load Files'.</p>
+        </div>
+    </div>
+
+    <script>
+        const BACKEND_URL = "https://smartfile-q80z.onrender.com";
+
+        async function fetchMedia() {
+            const email = document.getElementById('emailInput').value;
+            const grid = document.getElementById('media-grid');
+            
+            if(!email) {
+                alert("Please enter email first!");
+                return;
+            }
+
+            grid.innerHTML = '<p class="text-blue-400 col-span-full"><i class="fas fa-spinner fa-spin mr-2"></i>Loading data from Google Drive...</p>';
+
+            try {
+                const response = await fetch(`${BACKEND_URL}/get-media?email=${email}`);
+                const files = await response.json();
+
+                if (response.status !== 200) {
+                    grid.innerHTML = `<p class="text-red-400 col-span-full">Error: ${files.error} (Pehle account login karein)</p>`;
+                    return;
+                }
+
+                if (files.length === 0) {
+                    grid.innerHTML = '<p class="text-yellow-400 col-span-full">No media found in this account.</p>';
+                    return;
+                }
+
+                grid.innerHTML = '';
+                files.forEach(file => {
+                    let visual = '';
+                    if (file.mimeType.includes('image')) {
+                        visual = `<img src="${file.thumbnailLink}" class="w-full h-32 object-cover">`;
+                    } else if (file.mimeType.includes('video')) {
+                        visual = `<div class="w-full h-32 bg-gray-700 flex items-center justify-center"><i class="fas fa-video text-4xl text-blue-400"></i></div>`;
+                    } else {
+                        visual = `<div class="w-full h-32 bg-gray-700 flex items-center justify-center"><i class="fas fa-music text-4xl text-purple-400"></i></div>`;
+                    }
+
+                    const cardHTML = `
+                    <div class="bg-gray-800 rounded-lg overflow-hidden border border-gray-700 relative hover:border-blue-500 transition">
+                        <input type="checkbox" class="absolute top-2 left-2 w-5 h-5 z-10 cursor-pointer">
+                        <a href="${file.webViewLink}" target="_blank">
+                            ${visual}
+                        </a>
+                        <div class="p-2">
+                            <p class="text-sm truncate font-semibold text-white" title="${file.name}">${file.name}</p>
+                            <p class="text-xs text-gray-400">${new Date(file.createdTime).toLocaleDateString()}</p>
+                        </div>
+                    </div>
+                    `;
+                    grid.innerHTML += cardHTML;
+                });
+            } catch (error) {
+                grid.innerHTML = `<p class="text-red-500 col-span-full">Backend se connect nahi ho paaya.</p>`;
+            }
+        }
+    </script>
+</body>
+</html>
+
